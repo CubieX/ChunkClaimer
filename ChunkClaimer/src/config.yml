@@ -1,0 +1,7 @@
+# Do NOT change the config version!
+config_version: 1
+# Enable debug output
+debug: false
+# set locale for user dialog messages
+# Currently supported: German = de
+language: de
