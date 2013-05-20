@@ -3,5 +3,34 @@ config_version: 1
 # Enable debug output
 debug: false
 # set locale for user dialog messages
-# Currently supported: German = de
+# Currently supported: English = en, German = de
 language: de
+# Player groups to automaticly add as member on created protections
+# can be used to give all moderators build rights on every CC region
+autoAddGroupsAsMembers:
+  - Moderator
+  - VIPModerator
+# Limits for claiming chunks per player group
+# Groups not mentioned here can claim an unlimited number of chunks
+claimingLimits:
+  Gast: 0
+  Member: 1
+  Supporter: 1
+  Moderator: 1
+  Designer: 1
+  VIP: 2
+  VIPSupporter: 2
+  VIPModerator: 2
+  VIPDesigner: 2
+  VIPModDesigner: 2
+# Currency symbol
+currency: '$'
+# Base price for claiming a chunk
+# If a price increase per claim is defined, this will only apply for
+# the first claimed chunk of a player (max: 100000.00)
+basePricePerClaimedRegion: 100.00
+# Price increase for every claimed chunk
+# This can be used to preevent exploiting the system by claiming
+# a large number of chunks just to annoy others
+# Price increse in percent per claimed region, except the first one (max: 500 percent)
+priceIncreasePerClaimedChunk: 25

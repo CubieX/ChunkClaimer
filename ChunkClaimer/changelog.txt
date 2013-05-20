@@ -1,5 +1,9 @@
 Changelog for ChunkClaimer by CubieX
 -------------------------------------
 
+V0.0.2
+- added handling for claiming a chunk with economy
+- added function to add and remove friends to a region
+
 V.1.0.0
 - Initial version

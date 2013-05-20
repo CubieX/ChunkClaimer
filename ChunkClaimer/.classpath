@@ -5,5 +5,6 @@
 	<classpathentry kind="lib" path="E:/Games/Minecraft/Pluginentwicklung/Libs/bukkit-1.5.2-R0.1.jar"/>
 	<classpathentry kind="lib" path="E:/Games/Minecraft/Pluginentwicklung/Libs/WorldGuard5.3.jar"/>
 	<classpathentry kind="lib" path="E:/Games/Minecraft/Pluginentwicklung/Libs/WorldEdit5.5.jar"/>
+	<classpathentry kind="lib" path="E:/Games/Minecraft/Pluginentwicklung/Libs/Vault1.2.22.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
