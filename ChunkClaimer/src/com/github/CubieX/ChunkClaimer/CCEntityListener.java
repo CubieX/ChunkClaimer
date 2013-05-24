@@ -2,14 +2,10 @@ package com.github.CubieX.ChunkClaimer;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import net.milkbowl.vault.permission.Permission;
-
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -159,18 +155,18 @@ public class CCEntityListener implements Listener
 
                         if(conditionsOK)
                         {
-                           // Surrounding areas are free to create that region, so create it for that player
-                           wgRM.addRegion(reg);
-
                            // TODO implement logging of transactions
                            if(econ.has(e.getPlayer().getName(), ChunkClaimer.basePricePerClaimedRegion)) // has player enough money?
                            {
                               EconomyResponse ecoRes = econ.withdrawPlayer(e.getPlayer().getName(), ChunkClaimer.basePricePerClaimedRegion);
                               if(ecoRes.transactionSuccess()) // claimed region successfully payed
                               {
+                                 // Surrounding areas are free to create that region and player has been charged successfully, so create protection for that player
+                                 wgRM.addRegion(reg);
+
                                  if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GREEN + "Dir wurden " + ChatColor.WHITE + ChunkClaimer.basePricePerClaimedRegion + " " + ChunkClaimer.currency + ChatColor.GREEN + " abgezogen.");}
                                  if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GREEN + "You have been charged with " + ChatColor.WHITE + ChunkClaimer.basePricePerClaimedRegion + " " + ChunkClaimer.currency + ChatColor.GREEN + ".");}
-                                 
+
                                  if(WEWGutil.saveWGregionManager(wgRM)) // Try to save all region changes
                                  {
                                     ChunkFinderUtil.placeOutlineForClaimedChunk(chunk, borderBlocks);
