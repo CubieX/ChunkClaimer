@@ -21,6 +21,7 @@ public class ChunkClaimer extends JavaPlugin
    static ArrayList<String> availableLanguages = new ArrayList<String>();
    static Permission perm = null;
    static Economy econ = null;
+   static final String ccRegionPrefix = "chunk"; // WARNING: Change this only for very good reasons! Will break compatibility with earlier created CC regions!!!
 
    private ChunkClaimer plugin = null;
    WorldGuardPlugin wgInst = null;

@@ -2,8 +2,8 @@ name: ChunkClaimer
 main: com.github.CubieX.ChunkClaimer.ChunkClaimer
 author: CubieX
 depend: [WorldEdit, WorldGuard]
-softdepend: [PermissionsEx, zPermissions, bPermissions, PermissionsBukkit]
-version: 0.0.4
+softdepend: [PermissionsEx, zPermissions, bPermissions, PermissionsBukkit, Vault, iConomy]
+version: 0.0.5
 description: Chunk claiming system designed for usage in the freebuild by normal members
 
 commands:

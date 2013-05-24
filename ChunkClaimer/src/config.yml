@@ -5,6 +5,10 @@ debug: false
 # set locale for user dialog messages
 # Currently supported: English = en, German = de
 language: de
+# Worlds where ChunkClaimer can be used to claim land
+enabledWorlds:
+  - world
+  - world_nether
 # Player groups to automaticly add as member on created protections
 # can be used to give all moderators build rights on every CC region
 autoAddGroupsAsMembers:

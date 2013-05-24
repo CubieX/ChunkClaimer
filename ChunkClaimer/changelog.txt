@@ -1,15 +1,21 @@
 Changelog for ChunkClaimer by CubieX
 -------------------------------------
-V0.0.4
+V.0.0.5
+- added config option for enabling worlds for CC
+- counting of owned regions will now only count CC regions (globally)
+- added info message about owned CC chunks and limit hen buying/selling chunks
+- no outline blocks will be placed in the Nether on region creation (will end up on the roof...)
+
+V.0.0.4
 - improved protection creation checks, to allow creation in intersecting regions
   where the player has building rights
 - improved user messages
 - added status message for not yet claimed areas if building and claiming is possible there
 
-V0.0.3
+V.0.0.3
 - fixed protection creation conditions
 
-V0.0.2
+V.0.0.2
 - added handling for claiming a chunk with economy
 - added function to add and remove friends to a region
 
