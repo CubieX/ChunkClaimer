@@ -19,7 +19,7 @@ import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.bukkit.BukkitPlayer;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.domains.DefaultDomain;
-import com.sk89q.worldguard.protection.UnsupportedIntersectionException;
+import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
@@ -32,6 +32,7 @@ public class CCEntityListener implements Listener
    Permission perm = null;
    Economy econ = null;
    List<Block> borderBlocks = new ArrayList<Block>();
+   String buildState = "No";
 
    public CCEntityListener(ChunkClaimer plugin, WorldGuardPlugin weInst, Permission perm, Economy econ)
    {
@@ -60,11 +61,11 @@ public class CCEntityListener implements Listener
             if((e.getPlayer().isOp()) ||                  
                   (e.getPlayer().hasPermission("chunkclaimer.buy")))
             {
-               if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GREEN + "Dies ist Chunk: X= " + chunk.getX() + " | Z= " + chunk.getZ() + " (Chunk-Koords)");}
-               if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GREEN + "This is chunk: X= " + chunk.getX() + " | Z= " + chunk.getZ() + " (Chunk-Coords)");}
+               if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.WHITE + "Dies ist Chunk: X= " + chunk.getX() + " | Z= " + chunk.getZ() + " (Chunk-Koords)");}
+               if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "This is chunk: X= " + chunk.getX() + " | Z= " + chunk.getZ() + " (Chunk-Coords)");}
 
                if(wgRM.hasRegion(region))
-               {
+               {  
                   if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GREEN + plugin.getDescription().getName() + "-Protection: " + ChatColor.WHITE + region + ChatColor.GREEN + "\n" +
                         "Besitzer: " + ChatColor.WHITE + getOwnerNamesOfRegion(wgRM, region) + "\n" + ChatColor.GREEN + 
                         "Freunde: " + ChatColor.WHITE + getMemberNamesOfRegion(wgRM, region));}
@@ -75,8 +76,32 @@ public class CCEntityListener implements Listener
                }
                else
                {
-                  if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GREEN + "Keine " + plugin.getDescription().getName() + "-Protection gefunden.");}
-                  if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GREEN + "No " + plugin.getDescription().getName() + "-Protection found.");}
+                  // get both points to define this region
+                  BlockVector bvMin = WEWGutil.convertToSk89qBV(ChunkFinderUtil.getLowerChunkDelimitingLocation(chunk));
+                  BlockVector bvMax = WEWGutil.convertToSk89qBV(ChunkFinderUtil.getUpperChunkDelimitingLocation(chunk));
+                  // define a region
+                  ProtectedCuboidRegion reg = new ProtectedCuboidRegion(region, bvMin, bvMax);
+
+                  // FIXME deprecated. evt. ersetzen.
+                  ApplicableRegionSet arSet = wgRM.getApplicableRegions(reg);
+
+                  if(e.getPlayer().isOp() ||
+                        e.getPlayer().hasPermission("chunkclaimer.admin") ||
+                        arSet.canBuild(lPlayer))
+                  {
+                     if(ChunkClaimer.language.equals("de")){buildState = ChatColor.GREEN + "Ja";}
+                     if(ChunkClaimer.language.equals("en")){buildState = ChatColor.GREEN + "Yes";}
+                  }
+                  else
+                  {
+                     if(ChunkClaimer.language.equals("de")){buildState = ChatColor.RED + "Nein";}
+                     if(ChunkClaimer.language.equals("en")){buildState = ChatColor.RED + "No";}
+                  }
+
+                  if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.WHITE + "Keine " + plugin.getDescription().getName() + "-Protection gefunden.\n" +
+                        "Kannst du hier bauen und eine Region beanspruchen: " + buildState);}
+                  if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "No " + plugin.getDescription().getName() + "-Protection found.\n" +
+                        "Can you build and claim a region here: " + buildState);}
                }
 
                ChunkFinderUtil.revertBorderBlocks(e.getPlayer(), borderBlocks);
@@ -113,6 +138,10 @@ public class CCEntityListener implements Listener
                         DefaultDomain members = new DefaultDomain();
                         owners.addPlayer(lPlayer);
 
+                        // this is the group of the player (needed later)
+                        DefaultDomain playerGroup = new DefaultDomain();
+                        playerGroup.addGroup(perm.getPrimaryGroup(e.getPlayer()));
+
                         // add defined groups to protection as members
                         if(null != ChunkClaimer.autoAddGroupsAsMembers)
                         {
@@ -131,31 +160,16 @@ public class CCEntityListener implements Listener
                         reg.setMembers(members);
                         reg.setPriority(1); // must be the priority of the underlying region + 1 to protect it properly in freebuild
 
+                        // FIXME deprecated. evt. ersetzen.
+                        ApplicableRegionSet arSet = wgRM.getApplicableRegions(reg);
+
                         List<ProtectedRegion> prList = new ArrayList<ProtectedRegion>();
                         prList.add(reg);
 
-                        boolean conditionsOK = true;
-
-                        try
-                        {                     
-                           for(ProtectedRegion pr : reg.getIntersectingRegions(prList))
-                           {                        
-                              if(wgRM.overlapsUnownedRegion(pr, lPlayer))
-                              {
-                                 conditionsOK = false; // a region which does not belong to this player is intersecting this region
-                                 break;
-                              }
-                           }
-                        }
-                        catch (UnsupportedIntersectionException e1)
+                        if(e.getPlayer().isOp() ||
+                              e.getPlayer().hasPermission("chunkclaimer.admin") ||
+                              arSet.canBuild(lPlayer))
                         {
-                           // TODO Auto-generated catch block
-                           e1.printStackTrace();
-                        }
-
-                        if(conditionsOK)
-                        {
-                           // TODO implement logging of transactions
                            if(econ.has(e.getPlayer().getName(), ChunkClaimer.basePricePerClaimedRegion)) // has player enough money?
                            {
                               EconomyResponse ecoRes = econ.withdrawPlayer(e.getPlayer().getName(), ChunkClaimer.basePricePerClaimedRegion);
@@ -192,8 +206,8 @@ public class CCEntityListener implements Listener
                            }
                            else
                            {
-                              if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GOLD + "Du hast nicht genuegend Geld (" + ChunkClaimer.basePricePerClaimedRegion + ") um dir diesen Chunk leisten zu koennen!");}
-                              if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GOLD + "You do not have enough money (" + ChunkClaimer.basePricePerClaimedRegion + ") to afford this chunk!");}
+                              if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GOLD + "Du hast nicht genuegend Geld (" + ChatColor.WHITE + ChunkClaimer.basePricePerClaimedRegion + ChatColor.GOLD + ") um dir diesen Chunk leisten zu koennen!");}
+                              if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GOLD + "You do not have enough money (" + ChatColor.WHITE + ChunkClaimer.basePricePerClaimedRegion + ChatColor.GOLD + ") to afford this chunk!");}
                            }                           
                         }
                         else
@@ -260,8 +274,8 @@ public class CCEntityListener implements Listener
                }
                else
                {
-                  if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage("Es ist keine " + plugin.getDescription().getName() + "-Region fuer diesen Chunk vorhanden.");}
-                  if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage("There is no " + plugin.getDescription().getName() + " protection present for this chunk.");}
+                  if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.WHITE + "Es ist keine " + plugin.getDescription().getName() + "-Region fuer diesen Chunk vorhanden.");}
+                  if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "There is no " + plugin.getDescription().getName() + " protection present for this chunk.");}
                }
             }
          }

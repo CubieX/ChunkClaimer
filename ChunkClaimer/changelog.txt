@@ -1,5 +1,11 @@
 Changelog for ChunkClaimer by CubieX
 -------------------------------------
+V0.0.4
+- improved protection creation checks, to allow creation in intersecting regions
+  where the player has building rights
+- improved user messages
+- added status message for not yet claimed areas if building and claiming is possible there
+
 V0.0.3
 - fixed protection creation conditions
 
