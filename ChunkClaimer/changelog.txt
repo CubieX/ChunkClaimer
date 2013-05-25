@@ -1,5 +1,9 @@
 Changelog for ChunkClaimer by CubieX
 -------------------------------------
+V.0.1.0
+- added file for chunks to be sold and added config management for it
+- added Buy and Sell function
+
 V.0.0.5
 - added config option for enabling worlds for CC
 - counting of owned regions will now only count CC regions (globally)

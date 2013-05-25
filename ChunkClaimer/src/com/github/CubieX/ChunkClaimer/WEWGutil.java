@@ -1,14 +1,12 @@
 package com.github.CubieX.ChunkClaimer;
 
 import java.io.IOException;
-
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 
 import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 
-public class WEWGutil
+public final class WEWGutil
 {
    // This converts a Bukkit BlockVector to a WorldEdit BlockVector
    public static BlockVector convertToSk89qBV(Location location)

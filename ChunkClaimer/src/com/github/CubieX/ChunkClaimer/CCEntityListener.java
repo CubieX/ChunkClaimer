@@ -77,12 +77,12 @@ public class CCEntityListener implements Listener
                   if(wgCurrWorldRM.hasRegion(ccChunkRegionName))
                   {  
                      if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GREEN + plugin.getDescription().getName() + "-Protection: " + ChatColor.WHITE + ccChunkRegionName + ChatColor.GREEN + "\n" +
-                           "Besitzer: " + ChatColor.WHITE + getOwnerNamesOfRegion(wgCurrWorldRM, ccChunkRegionName) + "\n" + ChatColor.GREEN + 
-                           "Freunde: " + ChatColor.WHITE + getMemberNamesOfRegion(wgCurrWorldRM, ccChunkRegionName));}
+                           "Besitzer: " + ChatColor.WHITE + plugin.getOwnerNamesOfRegionAsString(wgCurrWorldRM, ccChunkRegionName) + "\n" + ChatColor.GREEN + 
+                           "Freunde: " + ChatColor.WHITE + plugin.getMemberNamesOfRegion(wgCurrWorldRM, ccChunkRegionName));}
 
                      if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GREEN + plugin.getDescription().getName() + "-Protection: " + ChatColor.WHITE + ccChunkRegionName + ChatColor.GREEN + "\n" +
-                           "Owners: " + ChatColor.WHITE + getOwnerNamesOfRegion(wgCurrWorldRM, ccChunkRegionName) + "\n" + ChatColor.GREEN + 
-                           "Friends: " + ChatColor.WHITE + getMemberNamesOfRegion(wgCurrWorldRM, ccChunkRegionName));}
+                           "Owners: " + ChatColor.WHITE + plugin.getOwnerNamesOfRegionAsString(wgCurrWorldRM, ccChunkRegionName) + "\n" + ChatColor.GREEN + 
+                           "Friends: " + ChatColor.WHITE + plugin.getMemberNamesOfRegion(wgCurrWorldRM, ccChunkRegionName));}
                   }
                   else
                   {
@@ -118,6 +118,8 @@ public class CCEntityListener implements Listener
                   ChunkFinderUtil.reCalculateBorderBlocks(chunk, borderBlocks);
                   ChunkFinderUtil.sendBorderBlocks(e.getPlayer(), borderBlocks);                
                }
+
+               return;
             }
             // ===================================================================
 
@@ -131,11 +133,11 @@ public class CCEntityListener implements Listener
                   {
                      if(!wgCurrWorldRM.hasRegion(ccChunkRegionName)) // Try only to create a new region, if a ChunkClaimer protection is not already existing at this point
                      {
-                        int playerRegionCount = getPlayersGlobalCCregionCount(lPlayer);
+                        int playerRegionCount = plugin.getPlayersGlobalCCregionCount(wgGlobalRM, lPlayer);
 
-                        if(ChunkClaimer.debug){e.getPlayer().sendMessage(ChatColor.WHITE + "Du besitzt global " + ChatColor.GREEN + playerRegionCount + " / " + getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.WHITE + " Chunks.");}
+                        if(ChunkClaimer.debug){e.getPlayer().sendMessage(ChatColor.WHITE + "Du besitzt global " + ChatColor.GREEN + playerRegionCount + " / " + plugin.getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.WHITE + " Chunks.");}
 
-                        if(getPlayersGlobalClaimLimit(e.getPlayer()) > playerRegionCount)
+                        if(plugin.getPlayersGlobalClaimLimit(e.getPlayer()) > playerRegionCount)
                         {
                            DefaultDomain owners = new DefaultDomain();
                            DefaultDomain members = new DefaultDomain();
@@ -192,13 +194,13 @@ public class CCEntityListener implements Listener
                                           ChunkFinderUtil.placeOutlineForClaimedChunk(chunk, borderBlocks);
                                        }
 
-                                       playerRegionCount = getPlayersGlobalCCregionCount(lPlayer);
+                                       playerRegionCount = plugin.getPlayersGlobalCCregionCount(wgGlobalRM, lPlayer);
 
                                        if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GREEN + "Du bist jetzt Besitzer der Region " + ChatColor.WHITE + ccChunkRegionName + ChatColor.GREEN + ".\n" +
-                                             "Du besitzt nun " + ChatColor.WHITE + playerRegionCount + "/" + getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GREEN + " Chunks.");}
+                                             "Du besitzt nun " + ChatColor.WHITE + playerRegionCount + "/" + plugin.getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GREEN + " Chunks.");}
 
                                        if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GREEN + "You are now owner of region " + ccChunkRegionName + ChatColor.WHITE + ccChunkRegionName + ChatColor.GREEN + ".\n" +
-                                             "You are now owning " + ChatColor.WHITE + playerRegionCount + "/" + getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GREEN + " Chunks.");}
+                                             "You are now owning " + ChatColor.WHITE + playerRegionCount + "/" + plugin.getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GREEN + " Chunks.");}
                                     }
                                     else
                                     {
@@ -231,17 +233,17 @@ public class CCEntityListener implements Listener
                         }
                         else
                         {
-                           if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GOLD + "Du hast dein Limit von " + ChatColor.WHITE + getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GOLD + " Regionen die du besitzen kannst erreicht!");}
-                           if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GOLD + "You have reached your limit of " + ChatColor.WHITE + getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GOLD + " regions that you can claim!");}
+                           if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GOLD + "Du hast dein Limit von " + ChatColor.WHITE + plugin.getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GOLD + " Regionen die du besitzen kannst erreicht!");}
+                           if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GOLD + "You have reached your limit of " + ChatColor.WHITE + plugin.getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GOLD + " regions that you can claim!");}
                         }
                      }
                      else
                      {  
                         if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GOLD + "Dieser Chunk " + ChatColor.WHITE + ccChunkRegionName + ChatColor.GOLD + " ist schon geschuetzt durch " + plugin.getDescription().getName() + "\n" +
-                              "Besitzer: " + ChatColor.WHITE + getOwnerNamesOfRegion(wgCurrWorldRM, ccChunkRegionName));}
+                              "Besitzer: " + ChatColor.WHITE + plugin.getOwnerNamesOfRegionAsString(wgCurrWorldRM, ccChunkRegionName));}
 
                         if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GOLD + "This chunk " + ChatColor.WHITE + ccChunkRegionName + ChatColor.GOLD + " is already protected by " + plugin.getDescription().getName() + "\n" +
-                              "Besitzer: " + ChatColor.WHITE + getOwnerNamesOfRegion(wgCurrWorldRM, ccChunkRegionName));}
+                              "Besitzer: " + ChatColor.WHITE + plugin.getOwnerNamesOfRegionAsString(wgCurrWorldRM, ccChunkRegionName));}
                      }
                   }
                   else
@@ -250,6 +252,8 @@ public class CCEntityListener implements Listener
                      if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GOLD + "You are not allowed to claim this area, because you have no building rights here.");}
                   }
                }
+
+               return;
             }
             // =================================================================================
 
@@ -268,13 +272,13 @@ public class CCEntityListener implements Listener
                         try
                         {
                            wgInst.getRegionManager(e.getPlayer().getWorld()).save();
-                           int playerRegionCount = getPlayersGlobalCCregionCount(lPlayer);
+                           int playerRegionCount = plugin.getPlayersGlobalCCregionCount(wgGlobalRM, lPlayer);
 
                            if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GREEN + "Region " + ccChunkRegionName + " wurde entfernt.\n" +
-                                 "Du besitzt jetzt " + ChatColor.WHITE + playerRegionCount + "/" + getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GREEN + " Chunks.");}
+                                 "Du besitzt jetzt " + ChatColor.WHITE + playerRegionCount + "/" + plugin.getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GREEN + " Chunks.");}
 
                            if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GREEN + "Region " + ccChunkRegionName + " has been removed.\n" +
-                                 "You are now owning " + ChatColor.WHITE + playerRegionCount + "/" + getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GREEN + " Chunks.");}                        
+                                 "You are now owning " + ChatColor.WHITE + playerRegionCount + "/" + plugin.getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GREEN + " Chunks.");}                        
                         }
                         catch (IOException ex)
                         {
@@ -296,6 +300,8 @@ public class CCEntityListener implements Listener
                      if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "There is no " + plugin.getDescription().getName() + " protection present for this chunk.");}
                   }
                }
+
+               return;
             }
          }
       }
@@ -304,122 +310,6 @@ public class CCEntityListener implements Listener
 
    // ##########################################################################################
 
-   String getOwnerNamesOfRegion(RegionManager rm, String region)
-   {
-      String ownerNames = "";
-      String[] owners = rm.getRegion(region).getOwners().getPlayers().toArray(new String[0]);
-      int ownerCount = rm.getRegion(region).getOwners().getPlayers().size();
-
-      for(int i = 0; i < ownerCount; i++)
-      {
-         if(!((i + 1) == ownerCount))
-         {  // not the last found owner
-            ownerNames = ownerNames + owners[i] + ", ";
-         }
-         else
-         {
-            // last found owner, so omit the comma
-            ownerNames = ownerNames + owners[i];
-         }
-      }
-
-      return (ownerNames);
-   }
-
-   String getMemberNamesOfRegion(RegionManager rm, String region)
-   {
-      String memberNames = "";
-
-      // Get member Groups
-      String[] memberGroups = rm.getRegion(region).getMembers().getGroups().toArray(new String[0]);
-      int memberGroupCount = rm.getRegion(region).getMembers().getGroups().size();
-
-      for(int i = 0; i < memberGroupCount; i++)
-      {         
-         if(!((i + 1) == memberGroupCount))
-         {  // not the last found memberGroup
-            memberNames = memberNames + "*" + memberGroups[i] + ", ";
-         }
-         else
-         {
-            // last found memberGroup, so omit the comma
-            memberNames = memberNames + "*" + memberGroups[i];
-         }
-      }
-
-      // get member Players
-      String[] memberPlayers = rm.getRegion(region).getMembers().getPlayers().toArray(new String[0]);
-      int memberPlayersCount = rm.getRegion(region).getMembers().getPlayers().size();
-
-      for(int i = 0; i < memberPlayersCount; i++)
-      {
-         if(i == 0)
-         {
-            if(memberGroupCount > 0)
-            {
-               // first member and one ore more groups are already present, so add comma in front of it
-               memberNames = memberNames + ", " + memberPlayers[i];
-            }
-            else
-            {
-               // first member and no groups are present, so don't add comma
-               memberNames = memberNames + memberPlayers[i];
-            }
-         }
-         else if((i > 0) && ((i + 1) == memberPlayersCount))
-         {  // one or more members present and the last one, so add comma only in front
-            memberNames = memberNames + ", " + memberPlayers[i];
-         }
-         else
-         {
-            // one or more members present and not the last one, so add comma in front and behind it
-            memberNames = memberNames + ", " + memberPlayers[i] + ", ";
-         }
-      }
-
-      return (memberNames);
-   }
-
-   // Counts all CC regions of a player (globally) in all enabled worlds
-   private int getPlayersGlobalCCregionCount(LocalPlayer lPlayer)
-   {
-      int count = 0;
-
-      // counts owned CC regions of player in all enabled worlds
-      for(World w : Bukkit.getServer().getWorlds())
-      {
-         if(plugin.getConfig().getStringList("enabledWorlds").contains(w.getName()))
-         {
-            Set<String> playerRegionsInWorld = wgGlobalRM.get(w).getRegions().keySet();
-
-            for(String reg : playerRegionsInWorld)
-            {
-               if(reg.startsWith(ChunkClaimer.ccRegionPrefix))
-               {
-                  count ++;
-               }
-            }
-         }
-      }
-
-      return (count);
-   }
-
-   // gets global claimLimit of player (defined for his group in config)
-   private int getPlayersGlobalClaimLimit(Player player)
-   {
-      int limit = 0;
-
-      if(ChunkClaimer.claimingLimits.containsKey(perm.getPrimaryGroup(player)))
-      {         
-         limit = ChunkClaimer.claimingLimits.get(perm.getPrimaryGroup(player));
-      }
-      else
-      {
-         limit = 100000; // this players group is not restricted in config file for claiming chunks
-      }
-
-      return (limit);
-   }
+   
 }
 

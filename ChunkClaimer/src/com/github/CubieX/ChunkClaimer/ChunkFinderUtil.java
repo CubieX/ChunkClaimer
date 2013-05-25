@@ -1,17 +1,20 @@
 package com.github.CubieX.ChunkClaimer;
 
 import java.util.List;
-
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 
-public class ChunkFinderUtil
+public final class ChunkFinderUtil
 {
+   
+   private ChunkFinderUtil()   
+   {
+      // static class
+   }
+   
    public static void reCalculateBorderBlocks(Chunk chunk, List<Block> borderBlocks)
    {
       borderBlocks.clear();
