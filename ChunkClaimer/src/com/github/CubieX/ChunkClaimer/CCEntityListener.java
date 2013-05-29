@@ -3,18 +3,14 @@ package com.github.CubieX.ChunkClaimer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import net.milkbowl.vault.permission.Permission;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -75,7 +71,7 @@ public class CCEntityListener implements Listener
                   if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "This is chunk: X= " + chunk.getX() + " | Z= " + chunk.getZ() + " (Chunk-Coords)");}
 
                   if(wgCurrWorldRM.hasRegion(ccChunkRegionName))
-                  {  
+                  {
                      if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GREEN + plugin.getDescription().getName() + "-Protection: " + ChatColor.WHITE + ccChunkRegionName + ChatColor.GREEN + "\n" +
                            "Besitzer: " + ChatColor.WHITE + plugin.getOwnerNamesOfRegionAsString(wgCurrWorldRM, ccChunkRegionName) + "\n" + ChatColor.GREEN + 
                            "Freunde: " + ChatColor.WHITE + plugin.getMemberNamesOfRegion(wgCurrWorldRM, ccChunkRegionName));}
@@ -83,6 +79,22 @@ public class CCEntityListener implements Listener
                      if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GREEN + plugin.getDescription().getName() + "-Protection: " + ChatColor.WHITE + ccChunkRegionName + ChatColor.GREEN + "\n" +
                            "Owners: " + ChatColor.WHITE + plugin.getOwnerNamesOfRegionAsString(wgCurrWorldRM, ccChunkRegionName) + "\n" + ChatColor.GREEN + 
                            "Friends: " + ChatColor.WHITE + plugin.getMemberNamesOfRegion(wgCurrWorldRM, ccChunkRegionName));}
+
+                     if(plugin.chunkIsOnSale(e.getPlayer().getWorld().getName(), ccChunkRegionName))
+                     {
+                        int price = plugin.getPriceOfChunkOnSale(e.getPlayer().getWorld().getName(), ccChunkRegionName);
+
+                        if(plugin.getSellingPlayerOfChunkOnSale(e.getPlayer().getWorld().getName(), ccChunkRegionName).equals(e.getPlayer().getName()))
+                        {
+                           if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.WHITE + "Du hast diesen Chunk zum Verkauf gesetzt fuer " + ChatColor.GREEN + price + " " + ChunkClaimer.currency + ChatColor.WHITE + ".");}
+                           if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "You have set this chunk on sale for " + ChatColor.GREEN + price + " " + ChunkClaimer.currency + ChatColor.WHITE + ".");}
+                        }
+                        else
+                        {
+                           if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.WHITE + "Du kannst diesen Chunk kaufen fuer " + ChatColor.GREEN + price + " " + ChunkClaimer.currency + ChatColor.WHITE + ".");}
+                           if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "You can buy this chunk for " + ChatColor.GREEN + price + " " + ChunkClaimer.currency + ChatColor.WHITE + ".");}
+                        }                        
+                     }
                   }
                   else
                   {
@@ -95,23 +107,26 @@ public class CCEntityListener implements Listener
                      // FIXME deprecated. evt. ersetzen.
                      ApplicableRegionSet arSet = wgCurrWorldRM.getApplicableRegions(reg);
 
+                     if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.WHITE + "Keine " + plugin.getDescription().getName() + "-Protection gefunden.");}
+                     if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "No " + plugin.getDescription().getName() + "-Protection found.");}
+
                      if(e.getPlayer().isOp() ||
                            e.getPlayer().hasPermission("chunkclaimer.admin") ||
                            arSet.canBuild(lPlayer))
                      {
                         if(ChunkClaimer.language.equals("de")){buildState = ChatColor.GREEN + "Ja";}
                         if(ChunkClaimer.language.equals("en")){buildState = ChatColor.GREEN + "Yes";}
+
+                        int price = plugin.getPriceOfNewChunkProtection(lPlayer);
+
+                        if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.WHITE + "Du kannst diesen Chunk beanspruchen fuer " + ChatColor.GREEN + price + " " + ChunkClaimer.currency);}
+                        if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "You can claim this chunk for " + ChatColor.GREEN + price + " " + ChunkClaimer.currency);}                        
                      }
                      else
                      {
-                        if(ChunkClaimer.language.equals("de")){buildState = ChatColor.RED + "Nein";}
-                        if(ChunkClaimer.language.equals("en")){buildState = ChatColor.RED + "No";}
-                     }
-
-                     if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.WHITE + "Keine " + plugin.getDescription().getName() + "-Protection gefunden.\n" +
-                           "Kannst du hier bauen und eine Region beanspruchen: " + buildState);}
-                     if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "No " + plugin.getDescription().getName() + "-Protection found.\n" +
-                           "Can you build and claim a region here: " + buildState);}
+                        if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.YELLOW + "Dieser Chunk ist nicht kaufbar.");}
+                        if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.YELLOW + "This chunk is not for sale.");}
+                     }                     
                   }
 
                   ChunkFinderUtil.revertBorderBlocks(e.getPlayer(), borderBlocks);
@@ -124,7 +139,7 @@ public class CCEntityListener implements Listener
             // ===================================================================
 
             // CHUNK PROTECTION CREATOR ========================================================
-            if(e.getPlayer().getItemInHand().getType() == Material.BLAZE_ROD)
+            /*if(e.getPlayer().getItemInHand().getType() == Material.BLAZE_ROD)
             {
                if((e.getPlayer().isOp()) ||
                      (e.getPlayer().hasPermission("chunkclaimer.buy")))
@@ -254,44 +269,33 @@ public class CCEntityListener implements Listener
                }
 
                return;
-            }
+            }*/
             // =================================================================================
 
             // CHUNK PROTECTION REMOVER ========================================================
             if(e.getPlayer().getItemInHand().getType() == Material.STICK)
             {
                if((e.getPlayer().isOp()) ||
-                     (e.getPlayer().hasPermission("chunkclaimer.buy")))
+                     (e.getPlayer().hasPermission("chunkclaimer.admin")))
                {
                   if(wgCurrWorldRM.hasRegion(ccChunkRegionName))
                   {
-                     if(wgCurrWorldRM.getRegion(ccChunkRegionName).isOwner(lPlayer))
+                     wgInst.getRegionManager(e.getPlayer().getWorld()).removeRegion(ccChunkRegionName);
+
+                     try
                      {
-                        wgInst.getRegionManager(e.getPlayer().getWorld()).removeRegion(ccChunkRegionName);
+                        wgInst.getRegionManager(e.getPlayer().getWorld()).save();
 
-                        try
-                        {
-                           wgInst.getRegionManager(e.getPlayer().getWorld()).save();
-                           int playerRegionCount = plugin.getPlayersGlobalCCregionCount(wgGlobalRM, lPlayer);
+                        if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.WHITE + "Region " + ChatColor.GREEN + ccChunkRegionName + ChatColor.WHITE + " wurde entfernt.");}
 
-                           if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.GREEN + "Region " + ccChunkRegionName + " wurde entfernt.\n" +
-                                 "Du besitzt jetzt " + ChatColor.WHITE + playerRegionCount + "/" + plugin.getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GREEN + " Chunks.");}
-
-                           if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.GREEN + "Region " + ccChunkRegionName + " has been removed.\n" +
-                                 "You are now owning " + ChatColor.WHITE + playerRegionCount + "/" + plugin.getPlayersGlobalClaimLimit(e.getPlayer()) + ChatColor.GREEN + " Chunks.");}                        
-                        }
-                        catch (IOException ex)
-                        {
-                           if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChunkClaimer.logPrefix + ChatColor.RED + "FEHLER beim Speichern dieser Region!");}
-                           if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChunkClaimer.logPrefix + ChatColor.RED + "ERROR while saving this region!");}
-
-                           ChunkClaimer.log.severe(ChunkClaimer.logPrefix + "ERROR while saving this region!");
-                        }
+                        if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "Region " + ChatColor.GREEN + ccChunkRegionName + ChatColor.WHITE + " has been removed.");}                        
                      }
-                     else
+                     catch (IOException ex)
                      {
-                        if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.RED + plugin.getDescription().getName() + "-Regionen koennen nur von ihren Besitzern, oder Spielern mit den noetigen Rechten entfernt werden.");}
-                        if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.RED + plugin.getDescription().getName() + "-Regions may only be removed by it's owners, or players with proper permissions.");}
+                        if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChunkClaimer.logPrefix + ChatColor.RED + "FEHLER beim Speichern dieser Region!");}
+                        if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChunkClaimer.logPrefix + ChatColor.RED + "ERROR while saving this region!");}
+
+                        ChunkClaimer.log.severe(ChunkClaimer.logPrefix + "ERROR while saving this region!");
                      }
                   }
                   else
@@ -310,6 +314,6 @@ public class CCEntityListener implements Listener
 
    // ##########################################################################################
 
-   
+
 }
 

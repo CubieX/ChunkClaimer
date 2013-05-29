@@ -28,13 +28,14 @@ public class ChunkClaimer extends JavaPlugin
    static ArrayList<String> availableLanguages = new ArrayList<String>();
    static Permission perm = null;
    static Economy econ = null;
-   
+
    static final String ccRegionPrefix = "chunk"; // WARNING: Change this only for very good reasons! Will break compatibility with earlier created CC regions!!!
    static final String keyOfferingTime = "offeringTime";
    static final String keySellingPlayer = "sellingPlayer";
    static final String keyPrice = "price";
    static final int maxSellingPrice = 100000000; // max. 100.000.000
-   
+   static final int unlimitedGroupClaimingLimit = 1000; // defines the limit for claimed regions for groups that are not listed in config file (usually Admins)
+
    private ChunkClaimer plugin = null;
    WorldGuardPlugin wgInst = null;
    private CCCommandHandler comHandler = null;
@@ -48,7 +49,7 @@ public class ChunkClaimer extends JavaPlugin
    static List<String> autoAddGroupsAsMembers = null;   
    static HashMap<String, Integer> claimingLimits = new HashMap<String, Integer>();
    static String currency = "$";
-   static double basePricePerClaimedRegion = 0;
+   static int basePricePerClaimedRegion = 0;
    static int priceIncreasePerClaimedChunk = 0;
 
    //*************************************************
@@ -170,7 +171,7 @@ public class ChunkClaimer extends JavaPlugin
       }
 
       currency = cHandler.getConfig().getString("currency");
-      basePricePerClaimedRegion = cHandler.getConfig().getDouble("basePricePerClaimedRegion");
+      basePricePerClaimedRegion = cHandler.getConfig().getInt("basePricePerClaimedRegion");
       if(basePricePerClaimedRegion < 0){basePricePerClaimedRegion = 0; exceed = true;}
       if(basePricePerClaimedRegion > 100000){basePricePerClaimedRegion = 100000; exceed = true;}
 
@@ -239,7 +240,7 @@ public class ChunkClaimer extends JavaPlugin
 
       return (ownerNames);
    }   
-  
+
    public String getMemberNamesOfRegion(RegionManager rm, String region)
    {
       String memberNames = "";
@@ -327,13 +328,13 @@ public class ChunkClaimer extends JavaPlugin
    {
       int limit = 0;
 
-      if(ChunkClaimer.claimingLimits.containsKey(perm.getPrimaryGroup(player)))
+      if(claimingLimits.containsKey(perm.getPrimaryGroup(player)))
       {         
-         limit = ChunkClaimer.claimingLimits.get(perm.getPrimaryGroup(player));
+         limit = claimingLimits.get(perm.getPrimaryGroup(player));
       }
       else
       {
-         limit = 100000; // this players group is not restricted in config file for claiming chunks
+         limit = unlimitedGroupClaimingLimit; // this players group is not restricted in config file for claiming chunks
       }
 
       return (limit);
@@ -350,7 +351,7 @@ public class ChunkClaimer extends JavaPlugin
       cHandler.getChunksToSellListFile().set(worldName + "." + ccRegionName + "." + keyPrice, price); // adds the price for the chunk
       cHandler.saveFireListFile();
    }
-   
+
    public void updateChunkOnSellList(String worldName, String ccRegionName, int price)
    {      
       cHandler.getChunksToSellListFile().set(worldName + "." + ccRegionName + "." + keyPrice, price); // updates the price for the chunk
@@ -366,7 +367,7 @@ public class ChunkClaimer extends JavaPlugin
    public boolean chunkIsOnSale(String worldName, String ccRegionName)
    {
       boolean isOnSale = false;
-      
+
       if(cHandler.getChunksToSellListFile().contains(worldName + "." + ccRegionName))
       {
          isOnSale = true;
@@ -374,19 +375,46 @@ public class ChunkClaimer extends JavaPlugin
 
       return(isOnSale);
    }
-   
-   public String getSellingPlayerOfChunkOnSale(String worldName, String ccRegionName)
+
+   /**
+    * Returns the price for claiming a not yet CC-protected chunk.<br>
+    * Price is depending on the base price and an optional<br>
+    * increase per already owned chunk.
+    *
+    * @return  the price for claiming this un-owned chunk
+    */
+   public int getPriceOfNewChunkProtection(LocalPlayer lPlayer)
    {
-      String playerName = cHandler.getChunksToSellListFile().getString(worldName + "." + ccRegionName + "." + keySellingPlayer);
-      
-      return(playerName);
+      int price = ChunkClaimer.basePricePerClaimedRegion;
+
+      for(int i = 0; i < getPlayersGlobalCCregionCount(wgInst.getGlobalRegionManager(), lPlayer); i++) // this will increase the price by given percentage with last price as base
+      {
+         price = price + (price * ChunkClaimer.priceIncreasePerClaimedChunk / 100);
+      }
+
+
+      return (price);
    }
-   
+
+   /**
+    * Returns the price for buying an already CC-protected chunk<br> 
+    * from another player.<br>
+    * The price is defined by the current owner.
+    *
+    * @return  the price for buying this chunk from another player
+    */
    public int getPriceOfChunkOnSale(String worldName, String ccRegionName)
    {
       int price = cHandler.getChunksToSellListFile().getInt(worldName + "." + ccRegionName + "." + keyPrice);
-      
+
       return(price);
+   }
+
+   public String getSellingPlayerOfChunkOnSale(String worldName, String ccRegionName)
+   {
+      String playerName = cHandler.getChunksToSellListFile().getString(worldName + "." + ccRegionName + "." + keySellingPlayer);
+
+      return(playerName);
    }
 
    public long getCurrTimeInMillis()

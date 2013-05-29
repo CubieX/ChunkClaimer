@@ -180,16 +180,18 @@ public class CCCommandHandler implements CommandExecutor
                                     player.hasPermission("chunkclaimer.admin") ||
                                     arSet.canBuild(lPlayer))
                               {
-                                 if(econ.has(player.getName(), ChunkClaimer.basePricePerClaimedRegion)) // has player enough money?
+                                 int price = plugin.getPriceOfNewChunkProtection(lPlayer);
+
+                                 if(econ.has(player.getName(), price)) // has player enough money?
                                  {
-                                    EconomyResponse ecoRes = econ.withdrawPlayer(player.getName(), ChunkClaimer.basePricePerClaimedRegion);
+                                    EconomyResponse ecoRes = econ.withdrawPlayer(player.getName(), price);
                                     if(ecoRes.transactionSuccess()) // claimed region successfully payed
                                     {
                                        // Surrounding areas are free to create that region and player has been charged successfully, so create protection for that player
                                        wgCurrWorldRM.addRegion(reg);
 
-                                       if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GREEN + "Dir wurden " + ChatColor.WHITE + ChunkClaimer.basePricePerClaimedRegion + " " + ChunkClaimer.currency + ChatColor.GREEN + " abgezogen.");}
-                                       if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GREEN + "You have been charged with " + ChatColor.WHITE + ChunkClaimer.basePricePerClaimedRegion + " " + ChunkClaimer.currency + ChatColor.GREEN + ".");}
+                                       if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GREEN + "Dir wurden " + ChatColor.WHITE + price + " " + ChunkClaimer.currency + ChatColor.GREEN + " abgezogen.");}
+                                       if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GREEN + "You have been charged with " + ChatColor.WHITE + price + " " + ChunkClaimer.currency + ChatColor.GREEN + ".");}
 
                                        if(WEWGutil.saveWGregionManager(wgCurrWorldRM)) // Try to save all region changes
                                        {
@@ -226,9 +228,9 @@ public class CCCommandHandler implements CommandExecutor
                                  }
                                  else
                                  {
-                                    if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GOLD + "Du hast nicht genuegend Geld (" + ChatColor.WHITE + ChunkClaimer.basePricePerClaimedRegion + ChatColor.GOLD + ") um diesen Chunk zu kaufen!");}
-                                    if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GOLD + "You do not have enough money (" + ChatColor.WHITE + ChunkClaimer.basePricePerClaimedRegion + ChatColor.GOLD + ") to buy this chunk!");}
-                                 }                           
+                                    if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GOLD + "Du hast nicht genuegend Geld (" + ChatColor.WHITE + price + ChatColor.GOLD + ") um diesen Chunk zu kaufen!");}
+                                    if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GOLD + "You do not have enough money (" + ChatColor.WHITE + price + ChatColor.GOLD + ") to buy this chunk!");}
+                                 }
                               }
                               else
                               {
@@ -251,10 +253,15 @@ public class CCCommandHandler implements CommandExecutor
                               if(!player.getName().equals(plugin.getSellingPlayerOfChunkOnSale(player.getWorld().getName(), ccChunkRegionName)))
                               {
                                  int playerRegionCount = plugin.getPlayersGlobalCCregionCount(wgGlobalRM, lPlayer);
-
+                                 int price = ChunkClaimer.basePricePerClaimedRegion;
+                                 
                                  if(plugin.getPlayersGlobalClaimLimit(player) > playerRegionCount)
                                  {
-                                    int price = plugin.getPriceOfChunkOnSale(player.getWorld().getName(), ccChunkRegionName);
+                                    if(ChunkClaimer.priceIncreasePerClaimedChunk > 0)
+                                    {
+                                       price = plugin.getPriceOfChunkOnSale(player.getWorld().getName(), ccChunkRegionName);
+                                    }
+                                   
                                     if(econ.has(player.getName(), price))
                                     {
                                        EconomyResponse ecoRes = econ.withdrawPlayer(player.getName(), price);
@@ -266,8 +273,8 @@ public class CCCommandHandler implements CommandExecutor
                                           chunkToBuy.getOwners().getPlayers().clear();
                                           chunkToBuy.setOwners(newOwner);
 
-                                          if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GREEN + "Dir wurden " + ChatColor.WHITE + ChunkClaimer.basePricePerClaimedRegion + " " + ChunkClaimer.currency + ChatColor.GREEN + " abgezogen.");}
-                                          if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GREEN + "You have been charged with " + ChatColor.WHITE + ChunkClaimer.basePricePerClaimedRegion + " " + ChunkClaimer.currency + ChatColor.GREEN + ".");}
+                                          if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GREEN + "Dir wurden " + ChatColor.WHITE + price + " " + ChunkClaimer.currency + ChatColor.GREEN + " abgezogen.");}
+                                          if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GREEN + "You have been charged with " + ChatColor.WHITE + price + " " + ChunkClaimer.currency + ChatColor.GREEN + ".");}
 
                                           if(WEWGutil.saveWGregionManager(wgCurrWorldRM)) // Try to save all region changes
                                           {
@@ -328,7 +335,7 @@ public class CCCommandHandler implements CommandExecutor
                                     {
                                        if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GOLD + "Du hast nicht genuegend Geld (" + ChatColor.WHITE + price + ChatColor.GOLD + ") um diesen Chunk zu kaufen!");}
                                        if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GOLD + "You do not have enough money (" + ChatColor.WHITE + price + ChatColor.GOLD + ") to buy this chunk!");}
-                                    }
+                                    }                                    
                                  }
                                  else
                                  {

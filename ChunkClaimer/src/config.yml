@@ -15,7 +15,7 @@ autoAddGroupsAsMembers:
   - Moderator
   - VIPModerator
 # Limits for claiming chunks per player group
-# Groups not mentioned here can claim an unlimited number of chunks
+# Groups not mentioned here can claim an "unlimited" number of chunks
 claimingLimits:
   Gast: 0
   Member: 1
@@ -27,14 +27,15 @@ claimingLimits:
   VIPModerator: 2
   VIPDesigner: 2
   VIPModDesigner: 2
-# Currency symbol
+# Currency symbol to use in user messages
 currency: '$'
 # Base price for claiming a chunk
 # If a price increase per claim is defined, this will only apply for
 # the first claimed chunk of a player (max: 100000.00)
-basePricePerClaimedRegion: 100.00
+basePricePerClaimedRegion: 100
 # Price increase for every claimed chunk
 # This can be used to preevent exploiting the system by claiming
 # a large number of chunks just to annoy others
 # Price increse in percent per claimed region, except the first one (max: 500 percent)
-priceIncreasePerClaimedChunk: 25
+# Default: 20
+priceIncreasePerClaimedChunk: 20
