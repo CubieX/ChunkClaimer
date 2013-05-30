@@ -180,62 +180,74 @@ public class CCCommandHandler implements CommandExecutor
                                     player.hasPermission("chunkclaimer.admin") ||
                                     arSet.canBuild(lPlayer))
                               {
-                                 int price = plugin.getPriceOfNewChunkProtection(lPlayer);
-
-                                 if(econ.has(player.getName(), price)) // has player enough money?
+                                 if(player.isOp() ||
+                                       player.hasPermission("chunkclaimer.admin") ||
+                                       plugin.clearanceZoneIsMaintained(wgCurrWorldRM, chunk, player.getName()))
                                  {
-                                    EconomyResponse ecoRes = econ.withdrawPlayer(player.getName(), price);
-                                    if(ecoRes.transactionSuccess()) // claimed region successfully payed
+                                    int price = plugin.getPriceOfNewChunkProtection(lPlayer);
+
+                                    if(econ.has(player.getName(), price)) // has player enough money?
                                     {
-                                       // Surrounding areas are free to create that region and player has been charged successfully, so create protection for that player
-                                       wgCurrWorldRM.addRegion(reg);
-
-                                       if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GREEN + "Dir wurden " + ChatColor.WHITE + price + " " + ChunkClaimer.currency + ChatColor.GREEN + " abgezogen.");}
-                                       if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GREEN + "You have been charged with " + ChatColor.WHITE + price + " " + ChunkClaimer.currency + ChatColor.GREEN + ".");}
-
-                                       if(WEWGutil.saveWGregionManager(wgCurrWorldRM)) // Try to save all region changes
+                                       EconomyResponse ecoRes = econ.withdrawPlayer(player.getName(), price);
+                                       if(ecoRes.transactionSuccess()) // claimed region successfully payed
                                        {
-                                          // don't place outline blocks in the Nether, because they will end up on the roof
-                                          /*if(player.getWorld().getEnvironment() != Environment.NETHER)
+                                          // Surrounding areas are free to create that region and player has been charged successfully, so create protection for that player
+                                          wgCurrWorldRM.addRegion(reg);
+
+                                          if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GREEN + "Dir wurden " + ChatColor.WHITE + price + " " + ChunkClaimer.currency + ChatColor.GREEN + " abgezogen.");}
+                                          if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GREEN + "You have been charged with " + ChatColor.WHITE + price + " " + ChunkClaimer.currency + ChatColor.GREEN + ".");}
+
+                                          if(WEWGutil.saveWGregionManager(wgCurrWorldRM)) // Try to save all region changes
+                                          {
+                                             // don't place outline blocks in the Nether, because they will end up on the roof
+                                             /*if(player.getWorld().getEnvironment() != Environment.NETHER)
                                           {
                                              ChunkFinderUtil.placeOutlineForClaimedChunk(chunk, borderBlocks);
                                           }*/
 
-                                          playerRegionCount = plugin.getPlayersGlobalCCregionCount(wgGlobalRM, lPlayer);
+                                             playerRegionCount = plugin.getPlayersGlobalCCregionCount(wgGlobalRM, lPlayer);
 
-                                          if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GREEN + "Du bist jetzt Besitzer der Region " + ChatColor.WHITE + ccChunkRegionName + ChatColor.GREEN + ".\n" +
-                                                "Du besitzt nun " + ChatColor.WHITE + playerRegionCount + "/" + plugin.getPlayersGlobalClaimLimit(player) + ChatColor.GREEN + " Chunks.");}
+                                             if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GREEN + "Du bist jetzt Besitzer der Region " + ChatColor.WHITE + ccChunkRegionName + ChatColor.GREEN + ".\n" +
+                                                   "Du besitzt nun " + ChatColor.WHITE + playerRegionCount + "/" + plugin.getPlayersGlobalClaimLimit(player) + ChatColor.GREEN + " Chunks.");}
 
-                                          if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GREEN + "You are now owner of region " + ccChunkRegionName + ChatColor.WHITE + ccChunkRegionName + ChatColor.GREEN + ".\n" +
-                                                "You are now owning " + ChatColor.WHITE + playerRegionCount + "/" + plugin.getPlayersGlobalClaimLimit(player) + ChatColor.GREEN + " Chunks.");}
+                                             if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GREEN + "You are now owner of region " + ccChunkRegionName + ChatColor.WHITE + ccChunkRegionName + ChatColor.GREEN + ".\n" +
+                                                   "You are now owning " + ChatColor.WHITE + playerRegionCount + "/" + plugin.getPlayersGlobalClaimLimit(player) + ChatColor.GREEN + " Chunks.");}
+                                          }
+                                          else
+                                          {
+                                             if(ChunkClaimer.language.equals("de")){player.sendMessage(ChunkClaimer.logPrefix + ChatColor.RED + "FEHLER beim Speichern dieser Region!");}
+                                             if(ChunkClaimer.language.equals("en")){player.sendMessage(ChunkClaimer.logPrefix + ChatColor.RED + "ERROR while saving this region!");}
+
+                                             ChunkClaimer.log.severe(ChunkClaimer.logPrefix + "ERROR while saving this region!");
+                                          }
                                        }
                                        else
                                        {
-                                          if(ChunkClaimer.language.equals("de")){player.sendMessage(ChunkClaimer.logPrefix + ChatColor.RED + "FEHLER beim Speichern dieser Region!");}
-                                          if(ChunkClaimer.language.equals("en")){player.sendMessage(ChunkClaimer.logPrefix + ChatColor.RED + "ERROR while saving this region!");}
+                                          // Eco transfer failed. Abort.
+                                          if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.RED + "Fehler beim Bezahlen der Region " + ccChunkRegionName + ". Bitte informiere einen Admin!");}
+                                          if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.RED + "Error on paying for the region " + ccChunkRegionName + ". Please inform an Admin!");}
 
-                                          ChunkClaimer.log.severe(ChunkClaimer.logPrefix + "ERROR while saving this region!");
+                                          ChunkClaimer.log.severe("Error on charging " + player.getName() + " for region " + ccChunkRegionName);
                                        }
                                     }
                                     else
                                     {
-                                       // Eco transfer failed. Abort.
-                                       if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.RED + "Fehler beim Bezahlen der Region " + ccChunkRegionName + ". Bitte informiere einen Admin!");}
-                                       if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.RED + "Error on paying for the region " + ccChunkRegionName + ". Please inform an Admin!");}
-
-                                       ChunkClaimer.log.severe("Error on charging " + player.getName() + " for region " + ccChunkRegionName);
+                                       if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GOLD + "Du hast nicht genuegend Geld (" + ChatColor.WHITE + price + ChatColor.GOLD + ") um diesen Chunk zu beanspruchen!");}
+                                       if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GOLD + "You do not have enough money (" + ChatColor.WHITE + price + ChatColor.GOLD + ") to claim this chunk!");}
                                     }
                                  }
                                  else
                                  {
-                                    if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GOLD + "Du hast nicht genuegend Geld (" + ChatColor.WHITE + price + ChatColor.GOLD + ") um diesen Chunk zu kaufen!");}
-                                    if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GOLD + "You do not have enough money (" + ChatColor.WHITE + price + ChatColor.GOLD + ") to buy this chunk!");}
+                                    if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GOLD + "Beanspruchung nicht moeglich. Diese Region ist zu nahe an benachbarten Regionen\n" +
+                                          " auf denen du weder ein 'Freund' noch ein 'Besitzer' bist.");}
+                                    if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GOLD + "Claiming not possible. This region is too close to neighboring regions\n" +
+                                          " on where you are neither a 'Friend' nor an 'Owner'.");}
                                  }
                               }
                               else
                               {
-                                 if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GOLD + "Kauf nicht moeglich. Die Region ueberschneidet sich mit anderen Regionen die dir nicht gehoeren.");}
-                                 if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GOLD + "Purchase not possible. This region is intersecting other regions you do not own.");}
+                                 if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.GOLD + "Beanspruchung nicht moeglich. Die Region ueberschneidet sich mit anderen Regionen die dir nicht gehoeren.");}
+                                 if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.GOLD + "Claiming not possible. This region is intersecting other regions you do not own.");}
                               }
                            }
                            else
@@ -254,14 +266,14 @@ public class CCCommandHandler implements CommandExecutor
                               {
                                  int playerRegionCount = plugin.getPlayersGlobalCCregionCount(wgGlobalRM, lPlayer);
                                  int price = ChunkClaimer.basePricePerClaimedRegion;
-                                 
+
                                  if(plugin.getPlayersGlobalClaimLimit(player) > playerRegionCount)
                                  {
                                     if(ChunkClaimer.priceIncreasePerClaimedChunk > 0)
                                     {
                                        price = plugin.getPriceOfChunkOnSale(player.getWorld().getName(), ccChunkRegionName);
                                     }
-                                   
+
                                     if(econ.has(player.getName(), price))
                                     {
                                        EconomyResponse ecoRes = econ.withdrawPlayer(player.getName(), price);

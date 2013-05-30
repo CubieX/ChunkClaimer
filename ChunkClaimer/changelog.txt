@@ -1,5 +1,12 @@
 Changelog for ChunkClaimer by CubieX
 -------------------------------------
+V.0.3.0
+- added check for maintaining the minimal distance to neighboring CC regions
+  where the player is neither registered as 'Owner' nor as a 'Friend'
+  (currently hardcoded to 48 blocks radius around chunk to claim)
+- added timer to remove client side torches as chunc marking after using the
+  CC query tool (Bone) after configurable amount of seconds.
+
 V.0.2.0
 - added increased price calculation (as defined in config file)
 - added display for selling price when using the QUERY tool (Bone)

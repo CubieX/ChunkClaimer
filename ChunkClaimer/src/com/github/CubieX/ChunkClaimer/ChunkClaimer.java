@@ -3,6 +3,7 @@ package com.github.CubieX.ChunkClaimer;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -11,6 +12,7 @@ import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -28,6 +30,7 @@ public class ChunkClaimer extends JavaPlugin
    static ArrayList<String> availableLanguages = new ArrayList<String>();
    static Permission perm = null;
    static Economy econ = null;
+   static HashMap<String, Integer> playersWithActiveQuery = new HashMap<String, Integer>();
 
    static final String ccRegionPrefix = "chunk"; // WARNING: Change this only for very good reasons! Will break compatibility with earlier created CC regions!!!
    static final String keyOfferingTime = "offeringTime";
@@ -35,13 +38,14 @@ public class ChunkClaimer extends JavaPlugin
    static final String keyPrice = "price";
    static final int maxSellingPrice = 100000000; // max. 100.000.000
    static final int unlimitedGroupClaimingLimit = 1000; // defines the limit for claimed regions for groups that are not listed in config file (usually Admins)
-
+   static final int chunkMarkingTime = 10; // time in second to mark a chunk with torches after queried with the "ChuncClaimer Query Tool" (Bone) 
+   
    private ChunkClaimer plugin = null;
    WorldGuardPlugin wgInst = null;
    private CCCommandHandler comHandler = null;
    private CCConfigHandler cHandler = null;
    private CCEntityListener eListener = null;
-   //private BSchedulerHandler schedHandler = null;
+   private CCSchedulerHandler schedHandler = null;
 
    // from config file
    static boolean debug = false;
@@ -92,17 +96,14 @@ public class ChunkClaimer extends JavaPlugin
          getServer().getPluginManager().disablePlugin(this);
       }
 
-      eListener = new CCEntityListener(this, wgInst, perm, econ);
+      schedHandler = new CCSchedulerHandler(this);
+      eListener = new CCEntityListener(this, wgInst, perm, econ, schedHandler);
       comHandler = new CCCommandHandler(this, cHandler, wgInst, perm, econ);      
       getCommand("cclaimer").setExecutor(comHandler);
 
-      //schedHandler = new BSchedulerHandler(this);
-
       readConfigValues();
 
-      log.info(this.getDescription().getName() + " version " + getDescription().getVersion() + " is enabled!");
-
-      //schedHandler.startPlayerInWaterCheckScheduler_SynchRepeating();
+      log.info(this.getDescription().getName() + " version " + getDescription().getVersion() + " is enabled!");      
    }
 
    private void initLanguageList()
@@ -213,7 +214,7 @@ public class ChunkClaimer extends JavaPlugin
       cHandler = null;
       eListener = null;
       comHandler = null;
-      //schedHandler = null; // TODO ACTIVATE THIS AGAIN IF USED!
+      schedHandler = null;
       log.info(this.getDescription().getName() + " version " + getDescription().getVersion() + " is disabled!");
    }
 
@@ -420,6 +421,94 @@ public class ChunkClaimer extends JavaPlugin
    public long getCurrTimeInMillis()
    {
       return (((Calendar)Calendar.getInstance()).getTimeInMillis());
+   }
+
+   /**
+    * Checks the surrounding area to ensure that the minimum<br>
+    * free space between CC protections is maintained.<br>
+    * Will also evaluate special permissions.<br>
+    * For example if CC protections near the checked protection<br>
+    * have the player set as "member".<br>
+    * If so, claiming the chunk while entering the restricted zone will be permitted.
+    *
+    * @return  if the clearance zone is maintained (or may be occupied because of special permissions)
+    */
+   public boolean clearanceZoneIsMaintained(RegionManager wgRM, Chunk chunkToClaim, String playerName)
+   {
+      boolean res = true;      
+
+      // TODO make clearance zone configurable in config (chunk radius)
+      // TODO make this more efficient!
+
+      // get all surrounding chunks in clearanceZone
+
+      String[] clearanceZoneChunkNames = {
+            // Row X0 (Center Row)
+            ChunkClaimer.ccRegionPrefix + "_" + chunkToClaim.getX() + "_" +       (chunkToClaim.getZ() + 1),
+            ChunkClaimer.ccRegionPrefix + "_" + chunkToClaim.getX() + "_" +       (chunkToClaim.getZ() + 2),
+            ChunkClaimer.ccRegionPrefix + "_" + chunkToClaim.getX() + "_" +       (chunkToClaim.getZ() + 3),
+            // this would be the central chunk (= the chunkToClaim)
+            ChunkClaimer.ccRegionPrefix + "_" + chunkToClaim.getX() + "_" +       (chunkToClaim.getZ() - 1),
+            ChunkClaimer.ccRegionPrefix + "_" + chunkToClaim.getX() + "_" +       (chunkToClaim.getZ() - 2),
+            ChunkClaimer.ccRegionPrefix + "_" + chunkToClaim.getX() + "_" +       (chunkToClaim.getZ() - 3),
+
+            // Row X+1 
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 1) + "_" + chunkToClaim.getZ(),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 1) + "_" + (chunkToClaim.getZ() + 1),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 1) + "_" + (chunkToClaim.getZ() + 2),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 1) + "_" + (chunkToClaim.getZ() + 3),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 1) + "_" + (chunkToClaim.getZ() - 1),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 1) + "_" + (chunkToClaim.getZ() - 2),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 1) + "_" + (chunkToClaim.getZ() - 3),
+
+            // Row X-1
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 1) + "_" + chunkToClaim.getZ(),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 1) + "_" + (chunkToClaim.getZ() + 1),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 1) + "_" + (chunkToClaim.getZ() + 2),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 1) + "_" + (chunkToClaim.getZ() + 3),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 1) + "_" + (chunkToClaim.getZ() - 1),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 1) + "_" + (chunkToClaim.getZ() - 2),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 1) + "_" + (chunkToClaim.getZ() - 3),
+            
+            // Row X+2
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 2) + "_" + chunkToClaim.getZ(),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 2) + "_" + (chunkToClaim.getZ() + 1),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 2) + "_" + (chunkToClaim.getZ() + 2),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 2) + "_" + (chunkToClaim.getZ() - 1),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 2) + "_" + (chunkToClaim.getZ() - 2),
+
+            // Row X-2
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 2) + "_" + chunkToClaim.getZ(),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 2) + "_" + (chunkToClaim.getZ() + 1),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 2) + "_" + (chunkToClaim.getZ() + 2),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 2) + "_" + (chunkToClaim.getZ() - 1),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 2) + "_" + (chunkToClaim.getZ() - 2),
+
+            // Row X+3
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 3) + "_" + chunkToClaim.getZ(),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 3) + "_" + (chunkToClaim.getZ() + 1),                        
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 3) + "_" + (chunkToClaim.getZ() - 1),
+
+            // Row X-3
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 3) + "_" + chunkToClaim.getZ(),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 3) + "_" + (chunkToClaim.getZ() + 1),
+            ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 3) + "_" + (chunkToClaim.getZ() - 1)
+      };
+
+      for(int i = 0; i < clearanceZoneChunkNames.length; i++)
+      {
+         if(wgRM.hasRegion(clearanceZoneChunkNames[i]))
+         {
+            if((!wgRM.getRegion(clearanceZoneChunkNames[i]).getMembers().getPlayers().contains(playerName.toLowerCase())) &&
+                  (!wgRM.getRegion(clearanceZoneChunkNames[i]).getOwners().getPlayers().contains(playerName.toLowerCase())))
+            {
+               res = false; // a CC region was found within the clearanceZone where the player is not a member or owner
+               break;
+            }
+         }
+      }
+
+      return res;
    }
 }
 

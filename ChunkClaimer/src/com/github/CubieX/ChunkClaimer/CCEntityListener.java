@@ -2,29 +2,29 @@ package com.github.CubieX.ChunkClaimer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import net.milkbowl.vault.economy.Economy;
-import net.milkbowl.vault.economy.EconomyResponse;
 import net.milkbowl.vault.permission.Permission;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
-import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.bukkit.BukkitPlayer;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
-import com.sk89q.worldguard.domains.DefaultDomain;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.GlobalRegionManager;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldedit.BlockVector;
 
 public class CCEntityListener implements Listener
@@ -32,18 +32,20 @@ public class CCEntityListener implements Listener
    private ChunkClaimer plugin = null;
    WorldGuardPlugin wgInst = null;
    Permission perm = null;
-   Economy econ = null;
-   List<Block> borderBlocks = new ArrayList<Block>();
+   Economy econ = null;   
+   HashMap<String, List<Block>> playersMarkedBorderBlocks = new HashMap<String, List<Block>>();
    String buildState = "No";
    GlobalRegionManager wgGlobalRM; // RegionManager that can access any given world
+   CCSchedulerHandler schedHandler = null;
 
-   public CCEntityListener(ChunkClaimer plugin, WorldGuardPlugin wgInst, Permission perm, Economy econ)
+   public CCEntityListener(ChunkClaimer plugin, WorldGuardPlugin wgInst, Permission perm, Economy econ, CCSchedulerHandler schedHandler)
    {
       this.plugin = plugin;
       this.wgInst = wgInst;
       this.perm = perm;
       this.econ = econ;
       wgGlobalRM = wgInst.getGlobalRegionManager();
+      this.schedHandler = schedHandler;
 
       plugin.getServer().getPluginManager().registerEvents(this, plugin);
    }
@@ -112,26 +114,52 @@ public class CCEntityListener implements Listener
 
                      if(e.getPlayer().isOp() ||
                            e.getPlayer().hasPermission("chunkclaimer.admin") ||
-                           arSet.canBuild(lPlayer))
+                           (arSet.canBuild(lPlayer)))
                      {
-                        if(ChunkClaimer.language.equals("de")){buildState = ChatColor.GREEN + "Ja";}
-                        if(ChunkClaimer.language.equals("en")){buildState = ChatColor.GREEN + "Yes";}
+                        if(plugin.clearanceZoneIsMaintained(wgCurrWorldRM, chunk, e.getPlayer().getName()))
+                        {
+                           if(ChunkClaimer.language.equals("de")){buildState = ChatColor.GREEN + "Ja";}
+                           if(ChunkClaimer.language.equals("en")){buildState = ChatColor.GREEN + "Yes";}
 
-                        int price = plugin.getPriceOfNewChunkProtection(lPlayer);
+                           int price = plugin.getPriceOfNewChunkProtection(lPlayer);
 
-                        if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.WHITE + "Du kannst diesen Chunk beanspruchen fuer " + ChatColor.GREEN + price + " " + ChunkClaimer.currency);}
-                        if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "You can claim this chunk for " + ChatColor.GREEN + price + " " + ChunkClaimer.currency);}                        
+                           if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.WHITE + "Du kannst diesen Chunk beanspruchen fuer " + ChatColor.GREEN + price + " " + ChunkClaimer.currency);}
+                           if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.WHITE + "You can claim this chunk for " + ChatColor.GREEN + price + " " + ChunkClaimer.currency);}
+                        }
+                        else
+                        {
+                           if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.YELLOW + "Dieser Chunk ist nicht beanspruchbar, da er zu nahe an fremden Regionen liegt.");}
+                           if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.YELLOW + "This chunk is not claimable, because it's too close to foreign regions.");}
+                        }
                      }
                      else
                      {
-                        if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.YELLOW + "Dieser Chunk ist nicht kaufbar.");}
-                        if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.YELLOW + "This chunk is not for sale.");}
-                     }                     
+                        if(ChunkClaimer.language.equals("de")){e.getPlayer().sendMessage(ChatColor.YELLOW + "Dieser Chunk ist nicht beanspruchbar, da du hier kein Baurecht hast.");}
+                        if(ChunkClaimer.language.equals("en")){e.getPlayer().sendMessage(ChatColor.YELLOW + "This chunk is not claimable, because you have no building rights here.");}
+                     }
                   }
 
-                  ChunkFinderUtil.revertBorderBlocks(e.getPlayer(), borderBlocks);
-                  ChunkFinderUtil.reCalculateBorderBlocks(chunk, borderBlocks);
-                  ChunkFinderUtil.sendBorderBlocks(e.getPlayer(), borderBlocks);                
+                  // set the new chunk marking with torches =============================
+
+                  if(!playersMarkedBorderBlocks.containsKey(e.getPlayer().getName()))
+                  {
+                     List<Block> borderBlocks = new ArrayList<Block>();
+                     playersMarkedBorderBlocks.put(e.getPlayer().getName(), borderBlocks); // initialize borderBlock list for player
+                  }
+
+                  ChunkFinderUtil.revertBorderBlocks(e.getPlayer(), playersMarkedBorderBlocks.get(e.getPlayer().getName()));
+                  ChunkFinderUtil.reCalculateBorderBlocks(chunk, playersMarkedBorderBlocks.get(e.getPlayer().getName()));
+                  ChunkFinderUtil.sendBorderBlocks(e.getPlayer(), playersMarkedBorderBlocks.get(e.getPlayer().getName()));
+
+                  if(ChunkClaimer.playersWithActiveQuery.containsKey(e.getPlayer().getName()))
+                  {
+                     // cancel existing query timer for player
+                     Bukkit.getServer().getScheduler().cancelTask(ChunkClaimer.playersWithActiveQuery.get(e.getPlayer().getName()));                     
+                  }
+
+                  // create new or update existing query timer for player and store TaskID of new timer to prevent multiple timers running for this player                  
+                  int taskID = schedHandler.startChunkMarkingTimer_Delayed(e.getPlayer(), playersMarkedBorderBlocks.get(e.getPlayer().getName()), ChunkClaimer.playersWithActiveQuery).getTaskId();
+                  ChunkClaimer.playersWithActiveQuery.put(e.getPlayer().getName(), taskID);
                }
 
                return;
@@ -310,6 +338,19 @@ public class CCEntityListener implements Listener
          }
       }
       // =================================================================================
+   }
+
+   //================================================================================================
+   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+   public void onPlayerQuitEvent(PlayerQuitEvent e)
+   {
+      if(ChunkClaimer.debug){ChunkClaimer.log.info(e.getPlayer().getName() + "Has left the game. Borderblocks deleted.");}
+
+      // cleanup
+      if(playersMarkedBorderBlocks.containsKey(e.getPlayer().getName()))
+      {
+         playersMarkedBorderBlocks.remove(e.getPlayer().getName());
+      }
    }
 
    // ##########################################################################################

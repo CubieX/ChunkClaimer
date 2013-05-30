@@ -9,12 +9,12 @@ import org.bukkit.entity.Player;
 
 public final class ChunkFinderUtil
 {
-   
+
    private ChunkFinderUtil()   
    {
       // static class
    }
-   
+
    public static void reCalculateBorderBlocks(Chunk chunk, List<Block> borderBlocks)
    {
       borderBlocks.clear();
@@ -63,7 +63,7 @@ public final class ChunkFinderUtil
          borderBlocks.add(corner3.getWorld().getHighestBlockAt(corner3).getRelative(0, -1, 0));
          borderBlocks.add(corner4.getWorld().getHighestBlockAt(corner4).getRelative(0, -1, 0));
       }
-            
+
       for (Block block : borderBlocks)
       {
          block.setTypeId(43);        
@@ -71,11 +71,11 @@ public final class ChunkFinderUtil
    }
 
    public static void revertBorderBlocks(Player player, List<Block> borderBlocks)
-   {
+   {      
       for (Block block : borderBlocks)
       {
          player.sendBlockChange(block.getLocation(), block.getType(), block.getData());
-      }
+      }     
    }
 
    public static void sendBorderBlocks(Player player, List<Block> borderBlocks)

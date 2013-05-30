@@ -1,5 +1,12 @@
 package com.github.CubieX.ChunkClaimer;
 
+import java.util.HashMap;
+import java.util.List;
+
+import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
+
 public class CCSchedulerHandler
 {
    private ChunkClaimer plugin = null;
@@ -9,14 +16,24 @@ public class CCSchedulerHandler
       this.plugin = plugin;
    }
 
-   public void startPlayerInWaterCheckScheduler_SynchRepeating()
+   public BukkitTask startChunkMarkingTimer_Delayed(final Player player, final List<Block> borderBlocks, final HashMap<String, Integer> playersWithActiveQuery)
    {
-      plugin.getServer().getScheduler().runTaskTimer(plugin, new Runnable()
+      BukkitTask task = plugin.getServer().getScheduler().runTaskLater(plugin, new Runnable()
       {
          public void run()
          {
-                    
+            if(player.isOnline())
+            {
+               ChunkFinderUtil.revertBorderBlocks(player, borderBlocks);
+            }
+
+            if(playersWithActiveQuery.containsKey(player.getName()))
+            {
+               playersWithActiveQuery.remove(player.getName());
+            }
          }
-      }, 10 * 20L, 1 * 20L); // 10 seconds delay, 1 second cycle
+      }, ChunkClaimer.chunkMarkingTime * 20L);
+
+      return task;
    }
 }
