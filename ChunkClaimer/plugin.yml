@@ -3,14 +3,14 @@ main: com.github.CubieX.ChunkClaimer.ChunkClaimer
 author: CubieX
 depend: [WorldEdit, WorldGuard]
 softdepend: [PermissionsEx, zPermissions, bPermissions, PermissionsBukkit, Vault, iConomy]
-version: 0.3.0
+version: 0.4.0
 description: Chunk claiming system designed for usage in the freebuild by normal members
 
 commands:
     cclaimer:
-      description: Using ChunkFinder
+      description: Using ChunkClaimer
       aliases: chunk
-      usage: /cclaimer version | reload | help
+      usage: /cclaimer kaufen | verkaufen [preis] | addfriend <spieler> | removefriend <spieler> | liste [seite]| version | reload | help
 
 permissions:
     chunkclaimer.buy:

@@ -6,7 +6,7 @@ public final class CCUtil
    {
       // static class
    }
-   
+
    public static boolean isInteger( String input )  
    {  
       try  
@@ -18,5 +18,26 @@ public final class CCUtil
       {  
          return false;  
       }  
-   }  
+   }
+
+   public static boolean isPositiveInteger( String input )  
+   {  
+      try  
+      {  
+         int i = Integer.parseInt( input );
+
+         if(i > 0)
+         {
+            return true;  
+         }
+         else
+         {
+            return false;
+         }
+      }  
+      catch( Exception e)  
+      {  
+         return false;
+      }  
+   }
 }

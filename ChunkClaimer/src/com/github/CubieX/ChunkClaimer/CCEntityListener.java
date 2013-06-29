@@ -17,12 +17,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.bukkit.BukkitPlayer;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
-import com.sk89q.worldguard.protection.GlobalRegionManager;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
 import com.sk89q.worldedit.BlockVector;
@@ -35,7 +33,6 @@ public class CCEntityListener implements Listener
    Economy econ = null;   
    HashMap<String, List<Block>> playersMarkedBorderBlocks = new HashMap<String, List<Block>>();
    String buildState = "No";
-   GlobalRegionManager wgGlobalRM; // RegionManager that can access any given world
    CCSchedulerHandler schedHandler = null;
 
    public CCEntityListener(ChunkClaimer plugin, WorldGuardPlugin wgInst, Permission perm, Economy econ, CCSchedulerHandler schedHandler)
@@ -44,7 +41,6 @@ public class CCEntityListener implements Listener
       this.wgInst = wgInst;
       this.perm = perm;
       this.econ = econ;
-      wgGlobalRM = wgInst.getGlobalRegionManager();
       this.schedHandler = schedHandler;
 
       plugin.getServer().getPluginManager().registerEvents(this, plugin);

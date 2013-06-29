@@ -1,5 +1,8 @@
 Changelog for ChunkClaimer by CubieX
 -------------------------------------
+V.0.4.0
+- added "list" command to show chunks currently for sale
+
 V.0.3.0
 - added check for maintaining the minimal distance to neighboring CC regions
   where the player is neither registered as 'Owner' nor as a 'Friend'

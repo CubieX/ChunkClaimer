@@ -2,11 +2,9 @@ package com.github.CubieX.ChunkClaimer;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import net.milkbowl.vault.permission.Permission;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -16,7 +14,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
 import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.bukkit.BukkitPlayer;
@@ -48,6 +45,8 @@ public class CCCommandHandler implements CommandExecutor
       this.econ = econ;
       wgGlobalRM = wgInst.getGlobalRegionManager();
    }
+
+   // TODO Alle Message-Strings komplett formatiert in einen "String-Pool" rein und von da aufrufen! (weil vieles mehrfach benutzt wird!)
 
    @Override
    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args)
@@ -99,8 +98,8 @@ public class CCCommandHandler implements CommandExecutor
                if(null != player)
                {
                   if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChunkClaimer.logPrefix + ChatColor.GREEN + "Rechtsklicke mit einem Knochen auf den Boden um den Umriss des Chunks zu sehen.\n" +                       
-                        "Rechtsklicke mit einer Lohenrute auf den Boden um diesen Chunk fuer dich zu beanspruchen." +
-                        "Rechtsklicke mit einem Stab auf den Boden um diesen Chunk wieder freizugeben.");}
+                        "Gib '/chunk kaufen' ein um diesen Chunk fuer dich zu beanspruchen." +
+                        "Gib '/chunk verkaufen PREIS' ein, um diesen Chunk zum verkauf zu setzen.");}
 
                   if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChunkClaimer.logPrefix + ChatColor.GREEN + "Hit the ground with a bone to display this chunks outlines and info.\n" +                       
                         "Hit the ground with a Blaze Rod to claim this chunk for yourself." +
@@ -118,7 +117,7 @@ public class CCCommandHandler implements CommandExecutor
                }
 
                return true;
-            }
+            }            
 
             // CLAIM OR BUY CHUNK ======================================================================            
             if ((args[0].equalsIgnoreCase("kaufen")) || ((args[0].equalsIgnoreCase("buy"))))
@@ -394,17 +393,41 @@ public class CCCommandHandler implements CommandExecutor
 
                return true;
             }
+
+            // LIST - Page 1 (further pages are in 2 parameters section!) ===============================================================
+            if (args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("liste"))
+            {
+               if(sender.isOp() || sender.hasPermission("chunkclaimer.buy"))
+               {
+                  if(null != player)
+                  {                     
+                     plugin.paginateChunksForSale(sender, plugin.getChunksForSaleDetailed(player.getWorld().getName()), 1, player.getWorld().getName());
+                  }
+                  else
+                  {
+                     if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChunkClaimer.logPrefix + "Dieser Befehl is nur im Spiel verfuegbar!");}
+                     if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChunkClaimer.logPrefix + "This command is only available in-game!");}       
+                  }
+               }
+               else
+               {
+                  if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChatColor.RED + "Du hast keine Rechte zum Auflisten von Grundstuecken!");}
+                  if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChatColor.RED + "You do not have sufficient permission to list lots!");} 
+               }                               
+            }
+
+            return true;
          }
 
          if(args.length == 2)
          {
-            if(null != player)
+            // SELL CHUNK ==================================================================================
+            if ((args[0].equalsIgnoreCase("verkaufen")) || (args[0].equalsIgnoreCase("sell"))) // args[1] = price
             {
-               RegionManager wgRM = wgInst.getRegionManager(player.getWorld());
-
-               // SELL CHUNK ==================================================================================
-               if ((args[0].equalsIgnoreCase("verkaufen")) || (args[0].equalsIgnoreCase("sell"))) // args[1] = price
+               if(null != player)
                {
+                  RegionManager wgRM = wgInst.getRegionManager(player.getWorld());
+
                   if(player.isOp() || (player.hasPermission("chunkclaimer.sell")))
                   {
                      Chunk chunk = player.getLocation().getChunk();
@@ -415,11 +438,11 @@ public class CCCommandHandler implements CommandExecutor
                         // is this chunk owned by the player?
                         if(wgRM.getRegion(ccChunkRegionName).getOwners().getPlayers().contains(player.getName().toLowerCase()))
                         {
-                           if((CCUtil.isInteger(args[1])))
+                           if((CCUtil.isPositiveInteger(args[1])))
                            {
                               int price = Integer.parseInt(args[1]); // double to prevent errors on values > Integer.MAX_VALUE
 
-                              if((price >= 0) && (price <= ChunkClaimer.maxSellingPrice))
+                              if(price <= ChunkClaimer.maxSellingPrice)
                               {
                                  if(plugin.chunkIsOnSale(player.getWorld().getName(), ccChunkRegionName))
                                  {
@@ -472,26 +495,60 @@ public class CCCommandHandler implements CommandExecutor
                      if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChatColor.RED + "You do not have sufficient permission to sell ChuncClaimer regions!");}
                   }
                }
-            }
-            else
-            {
-               if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChunkClaimer.logPrefix + "Dieser Befehl is nur im Spiel verfuegbar!");}
-               if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChunkClaimer.logPrefix + "This command is only available in-game!");}
-            }
+               else
+               {
+                  if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChunkClaimer.logPrefix + "Dieser Befehl is nur im Spiel verfuegbar!");}
+                  if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChunkClaimer.logPrefix + "This command is only available in-game!");}
+               }
 
-            return true;
+               return true;
+            }            
+
+            // LIST - Page 2 to X ==================================================
+            if (args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("liste"))
+            {
+               if(sender.isOp() || sender.hasPermission("chunkclaimer.buy"))
+               {
+                  if(CCUtil.isPositiveInteger(args[1]))
+                  {
+                     if(null != player)
+                     {
+                        plugin.paginateChunksForSale(sender, plugin.getChunksForSaleDetailed(player.getWorld().getName()), Integer.parseInt(args[1]), player.getWorld().getName());
+                     }
+                     else
+                     {
+                        if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChunkClaimer.logPrefix + "Dieser Befehl is nur im Spiel verfuegbar!");}
+                        if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChunkClaimer.logPrefix + "This command is only available in-game!");} 
+                     }
+                  }
+                  else
+                  {
+                     if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChatColor.RED + "Zweites Argument (Seite) muss eine positive Zahl sein!");}
+                     if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChatColor.RED + "The second argument (Page) must be a positive number!");}
+                  }                  
+               }
+               else
+               {
+                  if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChatColor.RED + "Du hast keine Rechte zum Auflisten von Grundstuecken!");}
+                  if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChatColor.RED + "You do not have sufficient permission to list lots!");} 
+               }
+
+               return true;
+            }
          }
 
          if (args.length == 3) // TODO modify, so multiple friends can be added at once
          {
-            if(null != player)
-            {
-               RegionManager wgRM = wgInst.getRegionManager(player.getWorld());
-               LocalPlayer sendingPlayer = new BukkitPlayer(wgInst, player);
 
-               // ADD_FRIEND ==================================================================================
-               if (args[0].equalsIgnoreCase("addfriend")) // args[1] = regionName, args[2] = Friends name
+
+            // ADD_FRIEND ==================================================================================
+            if (args[0].equalsIgnoreCase("addfriend")) // args[1] = regionName, args[2] = Friends name
+            {
+               if(null != player)
                {
+                  RegionManager wgRM = wgInst.getRegionManager(player.getWorld());
+                  LocalPlayer sendingPlayer = new BukkitPlayer(wgInst, player);
+
                   if(wgRM.hasRegion(args[1]))
                   {
                      if(Bukkit.getServer().getOfflinePlayer(args[2]).hasPlayedBefore())
@@ -530,13 +587,24 @@ public class CCCommandHandler implements CommandExecutor
                      if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.YELLOW + "Region " + args[1] + " existiert nicht!");}
                      if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.YELLOW + "Region " + args[1] + " does not exist!");}
                   }
-
-                  return true;
+               }
+               else
+               {
+                  if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChunkClaimer.logPrefix + "Dieser Befehl is nur im Spiel verfuegbar!");}
+                  if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChunkClaimer.logPrefix + "This command is only available in-game!");}
                }
 
-               // REMOVE_FRIEND ====================================================================================
-               if (args[0].equalsIgnoreCase("removefriend")) // args[1] = regionName, args[2] = ex-friends name
+               return true;
+            }
+
+            // REMOVE_FRIEND ====================================================================================
+            if (args[0].equalsIgnoreCase("removefriend")) // args[1] = regionName, args[2] = ex-friends name
+            {
+               if(null != player)
                {
+                  RegionManager wgRM = wgInst.getRegionManager(player.getWorld());
+                  LocalPlayer sendingPlayer = new BukkitPlayer(wgInst, player);
+
                   if(wgRM.hasRegion(args[1]))
                   {
                      if((wgRM.getRegion(args[1]).isOwner(sendingPlayer)) || (player.hasPermission("chunkclaimer.manage")))
@@ -567,23 +635,21 @@ public class CCCommandHandler implements CommandExecutor
                      if(ChunkClaimer.language.equals("de")){player.sendMessage(ChatColor.YELLOW + "Region " + args[1] + " existiert nicht!");}
                      if(ChunkClaimer.language.equals("en")){player.sendMessage(ChatColor.YELLOW + "Region " + args[1] + " does not exist!");}
                   }
-
-                  return true;
                }
-            }
-            else
-            {
-               if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChunkClaimer.logPrefix + "Dieser Befehl is nur im Spiel verfuegbar!");}
-               if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChunkClaimer.logPrefix + "This command is only available in-game!");}
-            }
+               else
+               {
+                  if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChunkClaimer.logPrefix + "Dieser Befehl is nur im Spiel verfuegbar!");}
+                  if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChunkClaimer.logPrefix + "This command is only available in-game!");}
+               }
 
-            return true;
+               return true;
+            }
          }
 
          if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChatColor.YELLOW + "Falsche Anzahl an Parametern!");}
          if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChatColor.YELLOW + "Wrong parameter count!");}
 
-         return false;
+         return false; // if false is returned, the help for the command stated in the plugin.yml will be displayed to the player
       }
 
       return false; // if false is returned, the help for the command stated in the plugin.yml will be displayed to the player

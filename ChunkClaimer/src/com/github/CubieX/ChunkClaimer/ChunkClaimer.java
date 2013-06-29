@@ -3,17 +3,16 @@ package com.github.CubieX.ChunkClaimer;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
-
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
-
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.World;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -37,9 +36,11 @@ public class ChunkClaimer extends JavaPlugin
    static final String keySellingPlayer = "sellingPlayer";
    static final String keyPrice = "price";
    static final int maxSellingPrice = 100000000; // max. 100.000.000
+   private final int columnLength = 10; // how much chars should be reserved the "price" in the chunk list (to make it nicer looking) 
    static final int unlimitedGroupClaimingLimit = 1000; // defines the limit for claimed regions for groups that are not listed in config file (usually Admins)
    static final int chunkMarkingTime = 10; // time in second to mark a chunk with torches after queried with the "ChuncClaimer Query Tool" (Bone) 
-   
+   public final int contentLinesPerPage = 10; // how many content pages should the paginator display per page
+
    private ChunkClaimer plugin = null;
    WorldGuardPlugin wgInst = null;
    private CCCommandHandler comHandler = null;
@@ -469,7 +470,7 @@ public class ChunkClaimer extends JavaPlugin
             ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 1) + "_" + (chunkToClaim.getZ() - 1),
             ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 1) + "_" + (chunkToClaim.getZ() - 2),
             ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() - 1) + "_" + (chunkToClaim.getZ() - 3),
-            
+
             // Row X+2
             ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 2) + "_" + chunkToClaim.getZ(),
             ChunkClaimer.ccRegionPrefix + "_" + (chunkToClaim.getX() + 2) + "_" + (chunkToClaim.getZ() + 1),
@@ -509,6 +510,112 @@ public class ChunkClaimer extends JavaPlugin
       }
 
       return res;
+   }
+
+   /**
+    * Returns a list of the names of all chunks for sale in the given world
+    * 
+    * @param World name to create the list from
+    * @return List of chunk names
+    */
+   public ArrayList<String> getChunksForSale(String worldName)
+   {
+      ArrayList<String> list = new ArrayList<String>();
+
+      if(null != cHandler.getChunksToSellListFile().getConfigurationSection(worldName))
+      {
+         for(String chunkToSell : cHandler.getChunksToSellListFile().getConfigurationSection(worldName).getKeys(false))
+         {
+            list.add(chunkToSell);
+         }
+      }
+
+      return list;
+   }
+
+   /**
+    * Returns a list of the names, price and seller of all chunks for sale in the given world
+    * 
+    * @param World name to create the list from
+    * @return List of chunks with details
+    */
+   public ArrayList<String> getChunksForSaleDetailed(String worldName)
+   {
+      ArrayList<String> list = new ArrayList<String>();
+
+      if(null != cHandler.getChunksToSellListFile().getConfigurationSection(worldName))
+      {
+         String line = "";
+         
+         for(String chunkToSell : cHandler.getChunksToSellListFile().getConfigurationSection(worldName).getKeys(false))
+         {
+            line = chunkToSell;
+            
+            // TODO Koordinaten angeben zusaetzlich? Damit man weiss wo es ist? teleportieren ermoeglichen?
+            if(ChunkClaimer.language.equals("de"))
+            {
+               line += " | Preis: " + String.format("%" + columnLength + "s", cHandler.getChunksToSellListFile().getInt(worldName + "." + chunkToSell + ".price")) + " " + currency + " | ";
+               line += "Verkaeufer: " + cHandler.getChunksToSellListFile().getString(worldName + "." + chunkToSell + ".sellingPlayer");
+            }
+
+            if(ChunkClaimer.language.equals("en"))
+            {
+               line += " | Price: " + String.format("%" + columnLength + "s", cHandler.getChunksToSellListFile().getInt(worldName + "." + chunkToSell + ".price")) + " " + currency + " | ";
+               line += "Seller: " + cHandler.getChunksToSellListFile().getString(worldName + "." + chunkToSell + ".sellingPlayer");
+            }
+            
+            list.add(line);
+         }
+      }
+
+      return list;
+   }
+
+   /**
+    * Paginates a string list of chunks for sale, to display it in chat page-by-page
+    * 
+    * @param Pass the first parameter as the sender.
+    * @param The second parameter as the list with all entries.
+    * @param The third as the page number to display.
+    */
+   public void paginateChunksForSale(CommandSender sender, ArrayList<String> list, int page, String worldName)
+   {
+      int totalPageCount = 1;
+      
+      if((list.size() % contentLinesPerPage) == 0)
+      {
+         totalPageCount = list.size() / contentLinesPerPage;
+      }
+      else
+      {
+         totalPageCount = (list.size() / contentLinesPerPage) + 1;
+      }
+      
+      sender.sendMessage(ChatColor.WHITE + "----------------------------------------------");      
+      if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChatColor.GREEN + "Chunks zum Verkauf in " + ChatColor.WHITE + worldName + ChatColor.GREEN + " - Seite (" + String.valueOf(page) + " von " + totalPageCount + ")");}
+      if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChatColor.GREEN + "Chunks for sale in " + ChatColor.WHITE + worldName + ChatColor.GREEN + " - Page (" + String.valueOf(page) + " of " + totalPageCount + ")");}
+      sender.sendMessage(ChatColor.WHITE + "----------------------------------------------");
+
+      if(list.isEmpty())
+      {
+         if(ChunkClaimer.language.equals("de")){sender.sendMessage(ChatColor.WHITE + "Zur Zeit werden keine Chunks in " + ChatColor.GREEN + worldName + ChatColor.WHITE + " verkauft.");}
+         if(ChunkClaimer.language.equals("en")){sender.sendMessage(ChatColor.WHITE + "There are currently no chunks for sale in " + ChatColor.GREEN + worldName + ChatColor.WHITE + ".");}
+      }
+      else
+      {
+         int i = 0, k = 0;
+         page--;
+
+         for (String entry : list)
+         {
+            k++;
+            if ((((page * contentLinesPerPage) + i + 1) == k) && (k != ((page * contentLinesPerPage) + contentLinesPerPage + 1)))
+            {
+               i++;
+               sender.sendMessage(entry);
+            }
+         }
+      }      
    }
 }
 
